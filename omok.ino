@@ -101,6 +101,7 @@ void push(int pin)
         case RESET_BTN:
             PASS(_reset)
             reset();
+            Serial.println("Reset");
             _reset = true;
             break;
         case UP:
