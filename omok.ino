@@ -8,7 +8,6 @@
 #define RIGHT 9
 #define PUT 10
 #define LOOP(name, n) for (byte name = 0; name < n; name++)
-#define EVENT(pin) if (digitalRead(pin) == LOW)
 #define SHOW(STONE)                                             \
     LOOP(i, 8)                                                  \
     {                                                           \
@@ -23,6 +22,11 @@
         shiftOut(DATA, CLOCK, MSBFIRST, b);                     \
         digitalWrite(LATCH, HIGH);                              \
     }
+#define PASS(NAME) \
+    if (NAME)      \
+        return;    \
+    else           \
+        Serial.println("Pressed");
 
 enum Stone
 {
@@ -34,7 +38,12 @@ enum Stone
 Stone board[8][8];
 Stone player = BLACK;
 short x = 0, y = 0;
-bool _reset = false, _up = false, _down = false, _left = false, _right = false, _put = false;
+bool _reset = false,
+     _up = false,
+     _down = false,
+     _left = false,
+     _right = false,
+     _put = false;
 
 void reset()
 {
@@ -84,6 +93,83 @@ bool check(Stone stone)
     return false;
 }
 
+void push(int pin)
+{
+    int result = digitalRead(pin);
+
+    if (result == LOW)
+        switch (pin)
+        {
+        case RESET_BTN:
+            PASS(_reset)
+            reset();
+            _reset = true;
+            break;
+        case UP:
+            PASS(_up)
+            move(x, y + 1);
+            _up = true;
+            break;
+        case DOWN:
+            PASS(_down)
+            move(x, y - 1);
+            _down = true;
+            break;
+        case LEFT:
+            PASS(_left)
+            move(x - 1, y);
+            _left = true;
+            break;
+        case RIGHT:
+            PASS(_right)
+            move(x + 1, y);
+            _right = true;
+            break;
+        case PUT:
+            PASS(_put)
+            if (board[x][y] == EMPTY)
+            {
+                board[x][y] = player;
+                player = (player == BLACK) ? WHITE : BLACK;
+
+                Serial.print("Put at ");
+                Serial.print(x);
+                Serial.print(",");
+                Serial.print(y);
+                Serial.print(" Now Player: ");
+                Serial.println(player == BLACK ? "BLACK" : "WHITE");
+            }
+            else
+            {
+                Serial.println("Not Empty");
+            }
+            _put = true;
+            break;
+        }
+    else
+        switch (pin)
+        {
+        case RESET_BTN:
+            _reset = false;
+            break;
+        case UP:
+            _up = false;
+            break;
+        case DOWN:
+            _down = false;
+            break;
+        case LEFT:
+            _left = false;
+            break;
+        case RIGHT:
+            _right = false;
+            break;
+        case PUT:
+            _put = false;
+            break;
+        }
+}
+
 void setup()
 {
     reset();
@@ -100,38 +186,12 @@ void setup()
 
 void loop()
 {
-    EVENT(RESET_BTN)
-    {
-        reset();
-        Serial.println("RESET");
-    }
-    EVENT(UP)
-    move(x, y + 1);
-    EVENT(DOWN)
-    move(x, y - 1);
-    EVENT(LEFT)
-    move(x - 1, y);
-    EVENT(RIGHT)
-    move(x + 1, y);
-    EVENT(PUT)
-    {
-        if (board[x][y] == EMPTY)
-        {
-            board[x][y] = player;
-            player = (player == BLACK) ? WHITE : BLACK;
-
-            Serial.print("Put at ");
-            Serial.print(x);
-            Serial.print(",");
-            Serial.print(y);
-            Serial.print(" Now Player: ");
-            Serial.println(player == BLACK ? "BLACK" : "WHITE");
-        }
-        else
-        {
-            Serial.println("Not Empty");
-        }
-    }
+    push(RESET_BTN);
+    push(UP);
+    push(DOWN);
+    push(LEFT);
+    push(RIGHT);
+    push(PUT);
 
     if (check(WHITE))
     {
