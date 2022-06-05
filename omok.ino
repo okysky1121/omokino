@@ -24,9 +24,7 @@
     }
 #define PASS(NAME) \
     if (NAME)      \
-        return;    \
-    else           \
-        Serial.println("Pressed");
+        return;
 
 enum Stone
 {
